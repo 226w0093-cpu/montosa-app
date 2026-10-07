@@ -1,0 +1,8 @@
+{
+  "name": "Montosa App",
+  "short_name": "Montosa",
+  "start_url": "app_tecnico.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#C8102E"
+}

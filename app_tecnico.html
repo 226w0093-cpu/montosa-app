@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Montosa - App Técnico</title>
+    
+    <!-- Configuración PWA -->
+    <link rel="manifest" href="../manifest.json">
+    <meta name="theme-color" content="#C8102E">
+    <link rel="apple-touch-icon" href="img/icon-192.png">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --montosa-rojo: #C8102E;
+            --montosa-rojo-oscuro: #9B0920;
+        }
+        body {
+            background-color: #F4F6F9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 30px;
+        }
+        .header-app {
+            background-color: var(--montosa-rojo);
+            color: white;
+            padding: 15px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .btn-montosa {
+            background-color: var(--montosa-rojo);
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+        .btn-montosa:hover, .btn-montosa:active {
+            background-color: var(--montosa-rojo-oscuro);
+            color: white;
+        }
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header con Logo de Montosa e Indicador de Red -->
+    <div class="header-app text-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-white text-dark shadow-sm px-2 py-1">
+                <i class="bi bi-person-fill text-danger"></i> Técnico #1
+            </span>
+            <span id="indicadorRed" class="status-badge bg-warning text-dark fw-bold">
+                <i class="bi bi-wifi-off"></i> Modo Offline
+            </span>
+        </div>
+        <div class="bg-white d-inline-block px-3 py-1 rounded-3 shadow-sm mb-2">
+            <img src="img/logo_montosa.png" alt="Montosa Logo" height="35">
+        </div>
+        <h6 class="m-0 fw-bold">REGISTRO DE INSPECCIÓN TÉCNICA</h6>
+    </div>
+
+    <div class="container px-3">
+
+        <!-- Botón de Sincronización Diferida -->
+        <div class="card card-custom p-3 mb-3 bg-light border-start border-4 border-danger">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="m-0 fw-bold text-dark">Pendientes de Sincronizar</h6>
+                    <small class="text-muted">Guardados en memoria interna: <b id="cantPendientes" class="text-danger">0</b></small>
+                </div>
+                <button onclick="sincronizarConServidor()" class="btn btn-sm btn-success fw-bold px-3">
+                    <i class="bi bi-cloud-upload-fill"></i> Sincronizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulario Técnico Simplificado -->
+        <form id="formTaller" class="card card-custom p-3">
+            <h6 class="fw-bold text-danger mb-3 border-bottom pb-2">
+                <i class="bi bi-tools me-1"></i> Datos del Refrigerador
+            </h6>
+
+            <!-- Serie -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">NÚMERO DE SERIE / CÓDIGO (*)</label>
+                <input type="text" id="num_serie" class="form-control form-control-lg text-uppercase" placeholder="Ej: FC3789002234" required>
+            </div>
+
+            <!-- Compañía y Modelo -->
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold small">COMPAÑÍA (*)</label>
+                    <input type="text" id="compania" class="form-control form-control-lg" placeholder="Ej: HEINEKEN, INDIO" required>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label fw-semibold small">MODELO (*)</label>
+                    <input type="text" id="modelo" class="form-control form-control-lg" placeholder="Ej: VR08, CBH-100" required>
+                </div>
+            </div>
+
+            <!-- Fecha de Inspección -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">FECHA DE INSPECCIÓN (*)</label>
+                <input type="date" id="fecha_equipos" class="form-control form-control-lg" required>
+            </div>
+
+            <!-- Estatus Operativo -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">ESTATUS OPERATIVO (*)</label>
+                <select id="id_estatus" class="form-select form-select-lg" required>
+                    <option value="1">PENDIENTE</option>
+                    <option value="2">HABILITADO</option>
+                    <option value="3">GARANTÍA</option>
+                    <option value="4">COMODATADO</option>
+                    <option value="5">BAJA</option>
+                </select>
+            </div>
+
+            <!-- Interruptor Único de Revisado -->
+            <div class="form-check form-switch mb-3 p-3 bg-light rounded border">
+                <input class="form-check-input ms-0 me-2" type="checkbox" id="revisado" style="transform: scale(1.3);">
+                <label class="form-check-label fw-bold text-dark" for="revisado">
+                    <i class="bi bi-check-circle-fill text-success me-1"></i> MARCAR COMO REVISADO
+                </label>
+            </div>
+
+            <!-- Observaciones -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold small">OBSERVACIONES TÉCNICAS</label>
+                <textarea id="observaciones" class="form-control" rows="3" placeholder="Detalles de fallas o piezas cambiadas..."></textarea>
+            </div>
+
+            <!-- Botón de Guardado Offline -->
+            <button type="submit" class="btn btn-montosa btn-lg w-100 py-3 shadow">
+                <i class="bi bi-hdd-fill me-1"></i> GUARDAR EN CELULAR (OFFLINE)
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Script de Lógica Offline-First -->
+    <script>
+        // Establecer fecha de hoy por defecto
+        document.getElementById('fecha_equipos').value = new Date().toISOString().substring(0, 10);
+
+        // Detectar estado de la red
+        function actualizarEstadoRed() {
+            const badge = document.getElementById('indicadorRed');
+            if (navigator.onLine) {
+                badge.className = "status-badge bg-success text-white fw-bold";
+                badge.innerHTML = '<i class="bi bi-wifi"></i> Conectado a Wi-Fi';
+            } else {
+                badge.className = "status-badge bg-warning text-dark fw-bold";
+                badge.innerHTML = '<i class="bi bi-wifi-off"></i> Modo Offline';
+            }
+        }
+        window.addEventListener('online', actualizarEstadoRed);
+        window.addEventListener('offline', actualizarEstadoRed);
+        actualizarEstadoRed();
+
+        // Contador de pendientes en almacenamiento local
+        function actualizarContador() {
+            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            document.getElementById('cantPendientes').innerText = pendientes.length;
+        }
+        actualizarContador();
+
+        // Evento Guardar en celular
+        document.getElementById('formTaller').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            let nuevoRegistro = {
+                accion: "equipo",
+                numero_serie: document.getElementById('num_serie').value.trim(),
+                modelo: document.getElementById('modelo').value.trim(),
+                compania: document.getElementById('compania').value.trim(),
+                fecha_equipos: document.getElementById('fecha_equipos').value,
+                id_estatus: parseInt(document.getElementById('id_estatus').value),
+                revisado: document.getElementById('revisado').checked ? 1 : 0,
+                observaciones_tecnicas: document.getElementById('observaciones').value.trim()
+            };
+
+            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            pendientes.push(nuevoRegistro);
+            localStorage.setItem('montosa_pendientes', JSON.stringify(pendientes));
+
+            alert("✅ Registro guardado exitosamente en la memoria del teléfono.");
+            this.reset();
+            document.getElementById('fecha_equipos').value = new Date().toISOString().substring(0, 10);
+            actualizarContador();
+        });
+
+        // Sincronizar hacia sync.php
+        async function sincronizarConServidor() {
+            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            if (pendientes.length === 0) {
+                alert("No hay registros pendientes por sincronizar.");
+                return;
+            }
+
+            if (!navigator.onLine) {
+                alert("⚠️ Aún no tienes conexión a internet para sincronizar.");
+                return;
+            }
+
+            let errores = 0;
+            let enviados = 0;
+
+            for (let registro of pendientes) {
+                try {
+                    let respuesta = await fetch('../sync.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(registro)
+                    });
+                    let resultado = await respuesta.json();
+                    if (resultado.status === 'success') {
+                        enviados++;
+                    } else {
+                        errores++;
+                    }
+                } catch (error) {
+                    errores++;
+                }
+            }
+
+            if (errores === 0) {
+                alert(`🚀 ¡Sincronización Exitosa! (${enviados} registros sincronizados).`);
+                localStorage.removeItem('montosa_pendientes');
+                actualizarContador();
+            } else {
+                alert(`⚠️ Sincronización parcial: ${enviados} enviados, ${errores} con error.`);
+            }
+        }
+    </script>
+
+    <!-- Registro PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('../sw.js')
+            .then(reg => console.log('App lista para uso offline'))
+            .catch(err => console.error('Error al registrar App offline:', err));
+        });
+      }
+    </script>
+
+</body>
+</html>
