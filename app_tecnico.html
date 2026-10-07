@@ -6,7 +6,7 @@
     <title>Montosa - App Técnico</title>
     
     <!-- Configuración PWA -->
-    <link rel="manifest" href="../manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#C8102E">
     <link rel="apple-touch-icon" href="img/icon-192.png">
 
@@ -251,7 +251,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('../sw.js')
+          navigator.serviceWorker.register('sw.js')
             .then(reg => console.log('App lista para uso offline'))
             .catch(err => console.error('Error al registrar App offline:', err));
         });
