@@ -1,8 +1,23 @@
 {
-  "name": "Montosa App",
+  "name": "Distribuidora Montosa",
   "short_name": "Montosa",
   "start_url": "app_tecnico.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#C8102E"
+  "theme_color": "#C8102E",
+  "description": "Aplicación técnica para el control de refrigeradores y equipos Montosa.",
+  "icons": [
+    {
+      "src": "img/logo_montosa.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/logo_montosa.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
