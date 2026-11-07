@@ -424,7 +424,7 @@
 
             for (let registro of pendientes) {
                 try {
-                    let respuesta = await fetch('../sync.php', {
+                    let respuesta = await fetch('https://strewn-properly-blooper.ngrok-free.dev/api_montosa/sync.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(registro)
