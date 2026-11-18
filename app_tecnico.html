@@ -221,7 +221,9 @@
     </nav>
 
     <!-- Script de Lógica Offline-First y Manejo de Libreta con Edición -->
-    <script>
+<script>
+        const API_URL = 'https://strewn-properly-blooper.ngrok-free.dev/api_montosa/sync.php';
+
         const estatusTexto = {
             1: "PENDIENTE",
             2: "HABILITADO",
@@ -265,6 +267,7 @@
             if (navigator.onLine) {
                 badge.className = "status-badge bg-success text-white fw-bold";
                 badge.innerHTML = '<i class="bi bi-wifi"></i> Conectado a Wi-Fi';
+                sincronizarConServidor(true);
             } else {
                 badge.className = "status-badge bg-warning text-dark fw-bold";
                 badge.innerHTML = '<i class="bi bi-wifi-off"></i> Modo Offline';
@@ -275,76 +278,89 @@
         actualizarEstadoRed();
 
         function actualizarContador() {
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
-            document.getElementById('cantPendientes').innerText = pendientes.length;
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let soloPendientes = historial.filter(item => !item.sincronizado);
+            document.getElementById('cantPendientes').innerText = soloPendientes.length;
         }
         actualizarContador();
 
-        // Evento Guardar o Actualizar Registro
-        document.getElementById('formTaller').addEventListener('submit', function(e) {
+        document.getElementById('formTaller').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             let indexEdit = parseInt(document.getElementById('editIndex').value);
             let registro = {
                 accion: "equipo",
-                numero_serie: document.getElementById('num_serie').value.trim(),
+                numero_serie: document.getElementById('num_serie').value.trim().toUpperCase(),
                 modelo: document.getElementById('modelo').value.trim(),
                 compania: document.getElementById('compania').value.trim(),
                 fecha_equipos: document.getElementById('fecha_equipos').value,
                 id_estatus: parseInt(document.getElementById('id_estatus').value),
                 revisado: document.getElementById('revisado').checked ? 1 : 0,
-                observaciones_tecnicas: document.getElementById('observaciones').value.trim()
+                observaciones_tecnicas: document.getElementById('observaciones').value.trim(),
+                sincronizado: false
             };
 
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
 
             if (indexEdit >= 0) {
-                // Actualizar registro existente
-                pendientes[indexEdit] = registro;
-                alert("✏️ Estatus y datos del enfriador actualizados exitosamente.");
+                historial[indexEdit] = registro;
             } else {
-                // Guardar nuevo registro
-                pendientes.push(registro);
-                alert("✅ Nuevo enfriador guardado en la memoria del teléfono.");
+                let existeIdx = historial.findIndex(item => item.numero_serie === registro.numero_serie);
+                if (existeIdx >= 0) {
+                    historial[existeIdx] = registro;
+                } else {
+                    historial.unshift(registro);
+                }
             }
 
-            localStorage.setItem('montosa_pendientes', JSON.stringify(pendientes));
+            localStorage.setItem('montosa_pendientes', JSON.stringify(historial));
             cancelarEdicion();
             actualizarContador();
+
+            if (navigator.onLine) {
+                await sincronizarConServidor(true);
+                alert("✅ Guardado y sincronizado en tiempo real con el panel administrativo.");
+            } else {
+                alert("📴 Guardado en la Libreta Digital (Modo Offline). Se enviará en cuanto haya internet.");
+            }
         });
 
-        // Cargar datos en la Libreta Digital
         function cargarLibretaDigital() {
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
             let contenedor = document.getElementById('listaEquipos');
             
-            if (pendientes.length === 0) {
+            if (historial.length === 0) {
                 contenedor.innerHTML = '<div class="text-center text-muted py-4"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No hay enfriadores registrados aún.</div>';
                 return;
             }
 
-            renderizarLista(pendientes);
+            renderizarLista(historial);
         }
 
-        // Renderizar lista con botón Editar
         function renderizarLista(lista) {
             let contenedor = document.getElementById('listaEquipos');
             contenedor.innerHTML = '';
-            let todosLosPendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let historialCompleto = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
 
             lista.forEach((item) => {
-                let realIndex = todosLosPendientes.findIndex(p => p.numero_serie === item.numero_serie);
+                let realIndex = historialCompleto.findIndex(p => p.numero_serie === item.numero_serie);
                 let badgeClass = estatusColores[item.id_estatus] || 'bg-secondary text-white';
+                let syncBadge = item.sincronizado 
+                    ? '<span class="badge bg-success-subtle text-success border border-success"><i class="bi bi-cloud-check-fill"></i> En Panel</span>'
+                    : '<span class="badge bg-warning-subtle text-dark border border-warning"><i class="bi bi-cloud-arrow-up"></i> Pendiente</span>';
 
                 let card = document.createElement('div');
                 card.className = "card mb-2 border border-secondary-subtle shadow-sm";
                 card.innerHTML = `
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h6 class="fw-bold text-danger m-0">${item.numero_serie}</h6>
+                            <div>
+                                <h6 class="fw-bold text-danger m-0">${item.numero_serie}</h6>
+                                ${syncBadge}
+                            </div>
                             <span class="badge ${badgeClass}">${estatusTexto[item.id_estatus] || 'PENDIENTE'}</span>
                         </div>
-                        <p class="small text-muted mb-1">
+                        <p class="small text-muted mb-1 mt-2">
                             <b>Compañía:</b> ${item.compania} | <b>Modelo:</b> ${item.modelo}
                         </p>
                         <p class="small text-dark mb-2">
@@ -362,15 +378,15 @@
             });
         }
 
-        // Cargar datos en el formulario para editar
         function prepararEdicion(index) {
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
-            let item = pendientes[index];
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let item = historial[index];
 
             if (!item) return;
 
             document.getElementById('editIndex').value = index;
             document.getElementById('num_serie').value = item.numero_serie;
+            document.getElementById('num_serie').readOnly = true;
             document.getElementById('compania').value = item.compania;
             document.getElementById('modelo').value = item.modelo;
             document.getElementById('fecha_equipos').value = item.fecha_equipos;
@@ -387,6 +403,7 @@
 
         function cancelarEdicion() {
             document.getElementById('editIndex').value = "-1";
+            document.getElementById('num_serie').readOnly = false;
             document.getElementById('formTaller').reset();
             document.getElementById('fecha_equipos').value = new Date().toISOString().substring(0, 10);
             document.getElementById('bannerEdicion').classList.add('d-none');
@@ -396,9 +413,9 @@
 
         function filtrarEquipos() {
             let texto = document.getElementById('inputBuscar').value.toLowerCase();
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
 
-            let filtrados = pendientes.filter(item => 
+            let filtrados = historial.filter(item => 
                 item.numero_serie.toLowerCase().includes(texto) ||
                 item.modelo.toLowerCase().includes(texto) ||
                 item.compania.toLowerCase().includes(texto)
@@ -407,30 +424,35 @@
             renderizarLista(filtrados);
         }
 
-        async function sincronizarConServidor() {
-            let pendientes = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+        async function sincronizarConServidor(silencioso = false) {
+            let historial = JSON.parse(localStorage.getItem('montosa_pendientes') || '[]');
+            let pendientes = historial.filter(item => !item.sincronizado);
+
             if (pendientes.length === 0) {
-                alert("No hay registros pendientes por sincronizar.");
+                if (!silencioso) alert("Todos los registros ya están sincronizados con el panel.");
                 return;
             }
 
             if (!navigator.onLine) {
-                alert("⚠️ Aún no tienes conexión a internet para sincronizar.");
+                if (!silencioso) alert("⚠️ Aún no tienes conexión a internet para sincronizar.");
                 return;
             }
 
             let errores = 0;
             let enviados = 0;
 
-            for (let registro of pendientes) {
+            for (let i = 0; i < historial.length; i++) {
+                if (historial[i].sincronizado) continue;
+
                 try {
-                    let respuesta = await fetch('https://strewn-properly-blooper.ngrok-free.dev/api_montosa/sync.php', {
+                    let respuesta = await fetch(API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(registro)
+                        body: JSON.stringify(historial[i])
                     });
                     let resultado = await respuesta.json();
                     if (resultado.status === 'success') {
+                        historial[i].sincronizado = true;
                         enviados++;
                     } else {
                         errores++;
@@ -440,13 +462,16 @@
                 }
             }
 
-            if (errores === 0) {
-                alert(`🚀 ¡Sincronización Exitosa! (${enviados} registros sincronizados).`);
-                localStorage.removeItem('montosa_pendientes');
-                actualizarContador();
-                cargarLibretaDigital();
-            } else {
-                alert(`⚠️ Sincronización parcial: ${enviados} enviados, ${errores} con error.`);
+            localStorage.setItem('montosa_pendientes', JSON.stringify(historial));
+            actualizarContador();
+            cargarLibretaDigital();
+
+            if (!silencioso) {
+                if (errores === 0) {
+                    alert(`🚀 ¡Sincronización Exitosa! (${enviados} registros enviados al panel).`);
+                } else {
+                    alert(`⚠️ Sincronización parcial: ${enviados} enviados, ${errores} con error.`);
+                }
             }
         }
     </script>
