@@ -155,12 +155,13 @@
                 <div class="mb-3">
                     <label class="form-label fw-semibold small">ESTATUS OPERATIVO (*)</label>
                     <select id="id_estatus" class="form-select form-select-lg" required>
-                        <option value="1">PENDIENTE</option>
-                        <option value="2">HABILITADO</option>
-                        <option value="3">GARANTÍA</option>
-                        <option value="4">COMODATADO</option>
-                        <option value="5">BAJA</option>
-                    </select>
+    <option value="2">PENDIENTE / TALLER</option>
+    <option value="1">HABILITADO</option>
+    <option value="5">GARANTÍA</option>
+    <option value="7">COMODATADO</option>
+    <option value="4">ALMACÉN</option>
+    <option value="3">BAJA</option>
+</select>
                 </div>
 
                 <!-- Interruptor Único de Revisado -->
@@ -225,19 +226,23 @@
         const API_URL = 'https://strewn-properly-blooper.ngrok-free.dev/api_montosa/sync.php';
 
         const estatusTexto = {
-            1: "PENDIENTE",
-            2: "HABILITADO",
-            3: "GARANTÍA",
-            4: "COMODATADO",
-            5: "BAJA"
+            1: "HABILITADO",
+            2: "PENDIENTE/TALLER",
+            3: "BAJA",
+            4: "ALMACÉN",
+            5: "GARANTÍA",
+            6: "PENDIENTE",
+            7: "COMODATADO"
         };
 
         const estatusColores = {
-            1: "bg-warning text-dark",
-            2: "bg-success text-white",
-            3: "bg-info text-dark",
-            4: "bg-primary text-white",
-            5: "bg-danger text-white"
+            1: "bg-success text-white",
+            2: "bg-warning text-dark",
+            3: "bg-danger text-white",
+            4: "bg-secondary text-white",
+            5: "bg-info text-dark",
+            6: "bg-warning text-dark",
+            7: "bg-primary text-white"
         };
 
         document.getElementById('fecha_equipos').value = new Date().toISOString().substring(0, 10);
